@@ -5,6 +5,8 @@ import bodyParser from "body-parser";
 import Todo from "./models/todo.js";
 import multer from "multer";
 import path from "path";
+import user from "./routes/users/index.js";
+import { checker } from "./middleware/check-auth.js";
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 DbConnect();
@@ -12,7 +14,7 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Orgin,X-Requested-With,Content-Type,Accept"
+    "Orgin,X-Requested-With,Content-Type,Accept , Authorization"
   );
   res.setHeader(
     "Access-Control-Allow-Methods",
@@ -28,6 +30,8 @@ const MINE_TYPE_MAP = {
   "image/jpg": "jpg",
   "image/jpeg": "jpeg",
 };
+app.use("/api/users", user);
+
 const storage = multer.diskStorage({
   filename: (req, file, cb) => {
     const name = file.originalname.toLowerCase().split(" ").join("-");
@@ -45,6 +49,7 @@ const storage = multer.diskStorage({
 });
 app.post(
   "/api/tasks",
+  checker,
   multer({ storage: storage }).single("image"),
   async (req, res, next) => {
     const url = req.protocol + "://" + req.get("host");
@@ -119,7 +124,7 @@ app.get("/api/tasks/:id", async (req, res, next) => {
     });
   } catch (error) {}
 });
-app.delete("/api/tasks/:id", async (req, res, next) => {
+app.delete("/api/tasks/:id", checker, async (req, res, next) => {
   try {
     await Todo.deleteOne({ _id: req.params.id });
     res.json({
@@ -134,6 +139,7 @@ app.delete("/api/tasks/:id", async (req, res, next) => {
 });
 app.put(
   "/api/tasks/:id",
+  checker,
   multer({ storage: storage }).single("image"),
 
   async (req, res, next) => {
